@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  dns:
+    build: ./dns
+    container_name: dns_rr
+    # monte o named.conf e a pasta de zones para editar sem rebuild (opcional)
+    volumes:
+      - ./dns/named.conf:/etc/bind/named.conf:ro
+      - ./dns/zones:/etc/bind/zones:ro
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    networks:
+      rrnet:
+        ipv4_address: 172.20.0.10
+
+  web1:
+    build: ./web1
+    container_name: web1
+    ports:
+      - "8081:3000"
+    depends_on:
+      - redis
+      - api
+    networks:
+      - rrnet
+
+  web2:
+    build: ./web2
+    container_name: web2
+    ports:
+      - "8082:3000"
+    depends_on:
+      - redis
+      - api
+    networks:
+      - rrnet
+
+  web3:
+    build: ./web3
+    container_name: web3
+    ports:
+      - "8083:3000"
+    depends_on:
+      - redis
+      - api
+    networks:
+      - rrnet
+
+  api:
+    build: ./backend
+    container_name: api
+    ports:
+      - "8080:4000"
+    depends_on:
+      - db
+    networks:
+      - rrnet
+
+  redis:
+    image: redis:7
+    container_name: redis_sessions
+    ports:
+      - "6379:6379"
+    networks:
+      - rrnet
+
+  db:
+    build: ./db
+    container_name: db
+    restart: always
+    env_file:
+      - ./db/.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - rrnet
+
+volumes:
+  db_data:
+
+networks:
+  rrnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
