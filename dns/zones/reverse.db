@@ -1,6 +1,6 @@
 $TTL 10
 @       IN      SOA     ns1.meutrabalho.com.br. admin.meutrabalho.com.br. (
-                        20250101
+                        2025112302
                         3600
                         1800
                         604800
@@ -8,7 +8,7 @@ $TTL 10
 
         IN      NS      ns1.meutrabalho.com.br.
 
-10      IN PTR ns1.meutrabalho.com.br.
-11      IN PTR web1.meutrabalho.com.br.
-12      IN PTR web2.meutrabalho.com.br.
-13      IN PTR web3.meutrabalho.com.br.
+10      IN      PTR ns1.meutrabalho.com.br.
+11      IN      PTR web1.meutrabalho.com.br.
+12      IN      PTR web2.meutrabalho.com.br.
+13      IN      PTR web3.meutrabalho.com.br.

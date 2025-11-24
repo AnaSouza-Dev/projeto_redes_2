@@ -23,8 +23,11 @@ services:
     depends_on:
       - redis
       - api
+    dns:
+      - 172.20.0.10
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.11
 
   web2:
     build: ./web2
@@ -35,7 +38,8 @@ services:
       - redis
       - api
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.12
 
   web3:
     build: ./web3
@@ -46,7 +50,8 @@ services:
       - redis
       - api
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.13
 
   api:
     build: ./backend
@@ -55,6 +60,8 @@ services:
       - "8080:4000"
     depends_on:
       - db
+    dns:
+      - 172.20.0.10
     networks:
       - rrnet
 
@@ -74,6 +81,8 @@ services:
       - ./db/.env
     ports:
       - "3306:3306"
+    dns:
+      - 172.20.0.10
     volumes:
       - db_data:/var/lib/mysql
     networks:
