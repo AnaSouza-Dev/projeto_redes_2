@@ -23,8 +23,8 @@ services:
     depends_on:
       - redis
       - api
-    dns:
-      - 172.20.0.10
+#    dns:
+#      - 172.20.0.10
     networks:
       rrnet:
         ipv4_address: 172.20.0.11
@@ -60,8 +60,8 @@ services:
       - "8080:4000"
     depends_on:
       - db
-    dns:
-      - 172.20.0.10
+#    dns:
+#      - 172.20.0.10
     networks:
       - rrnet
 
@@ -81,8 +81,8 @@ services:
       - ./db/.env
     ports:
       - "3306:3306"
-    dns:
-      - 172.20.0.10
+#    dns:
+#      - 172.20.0.10
     volumes:
       - db_data:/var/lib/mysql
     networks:
