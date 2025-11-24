@@ -1,17 +1,23 @@
-FROM node:20
+FROM node:20 AS builder
 
-# instalar npm versão solicitada
-RUN npm install -g npm@11.6.3
-
+RUN apt update && apt install -y nginx
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install
-
-COPY tsconfig.json ./
-COPY src ./src
-
+COPY . .
 RUN npm run build
 
-EXPOSE 3000
-CMD ["npm", "start"]
+FROM node:20
+
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+
+RUN apt update && apt install -y nginx
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+EXPOSE 80 3000
+
+CMD sh -c "npm start & nginx -g 'daemon off;'"
