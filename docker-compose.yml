@@ -63,7 +63,8 @@ services:
 #    dns:
 #      - 172.20.0.10
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.20
 
   redis:
     image: redis:7
@@ -71,7 +72,8 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.30
 
   db:
     build: ./db
@@ -86,7 +88,8 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     networks:
-      - rrnet
+      rrnet:
+        ipv4_address: 172.20.0.40
 
 volumes:
   db_data:
@@ -97,3 +100,4 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
