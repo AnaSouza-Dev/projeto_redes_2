@@ -4,7 +4,6 @@ services:
   dns:
     build: ./dns
     container_name: dns_rr
-    # monte o named.conf e a pasta de zones para editar sem rebuild (opcional)
     volumes:
       - ./dns/named.conf:/etc/bind/named.conf:ro
       - ./dns/zones:/etc/bind/zones:ro
@@ -14,6 +13,8 @@ services:
     networks:
       rrnet:
         ipv4_address: 172.20.0.10
+      macvlan2:
+        ipv4_address: ${DNS_MACVLAN_IP}
 
   web1:
     build: ./web1
@@ -28,6 +29,8 @@ services:
     networks:
       rrnet:
         ipv4_address: 172.20.0.11
+      macvlan2:
+        ipv4_address: ${WEB1_MACVLAN_IP}
 
   web2:
     build: ./web2
@@ -40,6 +43,8 @@ services:
     networks:
       rrnet:
         ipv4_address: 172.20.0.12
+      macvlan2:
+        ipv4_address: ${WEB2_MACVLAN_IP}
 
   web3:
     build: ./web3
@@ -52,6 +57,8 @@ services:
     networks:
       rrnet:
         ipv4_address: 172.20.0.13
+      macvlan2:
+        ipv4_address: ${WEB3_MACVLAN_IP}
 
   api:
     build: ./backend
@@ -97,3 +104,6 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
+
+  macvlan2:
+    external: true
