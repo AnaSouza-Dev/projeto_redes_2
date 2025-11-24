@@ -8,9 +8,9 @@ services:
     volumes:
       - ./dns/named.conf:/etc/bind/named.conf:ro
       - ./dns/zones:/etc/bind/zones:ro
-    ports:
-      - "53:53/udp"
-      - "53:53/tcp"
+#    ports:
+#      - "53:53/udp"
+#      - "53:53/tcp"
     networks:
       rrnet:
         ipv4_address: 172.20.0.10
