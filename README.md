@@ -1,14 +1,14 @@
-# Projeto — Arquitetura com RR DNS + 3 Web Servers + Backend + Redis + PostgreSQL + Docker + TypeScript
+# Projeto — Arquitetura com RR DNS + 3 Web Servers + Backend + Redis + MySQL + Docker + TypeScript
 
 
-Este projeto mostra como usar Round‑Robin DNS para balancear tráfego entre múltiplos servidores web, enquanto o estado de sessão é centralizado em Redis e a camada de aplicação comunica-se com PostgreSQL.
+Este projeto mostra como usar Round‑Robin DNS para balancear tráfego entre múltiplos servidores web, enquanto o estado de sessão é centralizado em Redis e a camada de aplicação comunica-se com MySQL.
 
 - Principais componentes:
 - Round‑Robin DNS (BIND / named)
 - 3 servidores Web (Node.js + TypeScript + Nginx)
 - API Backend (Node.js + TypeScript)
 - Redis para armazenamento de sessões
-- PostgreSQL para armazenamento relacional
+- MySQL para armazenamento relacional
 - Docker Compose para orquestração de containers
 
 
@@ -22,7 +22,7 @@ Este projeto mostra como usar Round‑Robin DNS para balancear tráfego entre m�
          \      |      /
           ─────────────   (API Backend)
                  │
-             PostgreSQL
+               MySQL
                  │
                 Redis
 
@@ -40,7 +40,7 @@ Para parar e remover containers:
 docker compose down
 ```
 
-Serviços esperados (nomes de containers): `dns`, `web1`, `web2`, `web3`, `api`, `redis`, `postgres`.
+Serviços esperados (nomes de containers): `dns`, `web1`, `web2`, `web3`, `api`, `redis`, `db`.
 
 ## Testando o Round‑Robin DNS
 
@@ -99,6 +99,26 @@ Configurações importantes dentro do script (edite se necessário):
 Requisitos e observações:
 - O script usa `resolvectl` (systemd-resolved); se seu sistema for diferente, ajuste o script.
 - Opcionalmente usa `dig` ou `nslookup` para validar resolução — instale `dnsutils`/`bind9-dnsutils` se precisar.
+
+## Testando Balanceamento Round‑Robin com Sessão Mantida
+
+Para testar o balanceamento de carga DNS mantendo a sessão do usuário entre diferentes servidores:
+
+1. **Suba os containers**: `docker compose up -d --build`
+2. **Configure o DNS**: `sudo ./utils/dns-toggle.sh docker`
+3. **Acesse no navegador**: `http://www.meutrabalho.com.br`
+4. **Faça login** e observe o badge mostrando qual servidor está respondendo
+5. **Pressione F5** para recarregar - o servidor muda mas você continua logado!
+
+📖 **Veja o guia completo**: [TESTE_BALANCEAMENTO.md](./TESTE_BALANCEAMENTO.md)
+
+**O que foi configurado**:
+- ✅ DNS com TTL = 0 (sem cache, balanceamento real a cada requisição)
+- ✅ Sessões centralizadas no Redis (compartilhadas entre todos os servidores)
+- ✅ Cookie de sessão válido por 24 horas
+- ✅ Badge visual mostrando qual servidor está processando a requisição
+
+Quando terminar, restaure o DNS: `sudo ./utils/dns-toggle.sh restore`
 - O script cria um backup de `/etc/resolv.conf` em `/etc/resolv.conf.projeto_redes_2.bak` antes de sobrescrever — esse backup é removido ao restaurar.
 - O script precisa de privilégios (uso de `sudo`) para aplicar `resolvectl` e alterar `iptables`.
 
@@ -126,7 +146,7 @@ GET /api/ping
 Response: { "ok": true }
 ```
 
-Outros endpoints (CRUD) interagem com o PostgreSQL; verifique `backend/src/routes.ts` para rotas disponíveis.
+Outros endpoints (CRUD) interagem com o MySQL; verifique `backend/src/routes.ts` para rotas disponíveis.
 
 ## Estrutura de pastas (resumida)
 
@@ -147,7 +167,7 @@ Outros endpoints (CRUD) interagem com o PostgreSQL; verifique `backend/src/route
 ## Variáveis de ambiente importantes
 
 - `backend/.env` — configurações da API (porta, conexão com DB, Redis)
-- `db/.env` — configuração do PostgreSQL (senha, usuário)
+- `db/.env` — configuração do MySQL (senha, usuário)
 - Se alterar IPs de rede Docker, atualize as referências de DNS e `docker-compose.yml` conforme necessário.
 
 ## Comandos úteis
@@ -161,11 +181,38 @@ Outros endpoints (CRUD) interagem com o PostgreSQL; verifique `backend/src/route
 
 - Se o DNS não rotacionar, verifique o container `dns` e o arquivo de zonas.
 - Se sessão não persistir entre web servers, confirme a conexão Redis e as configs em `web*/src/session.ts`.
-- Se a API não conecta ao PostgreSQL, verifique `db/init.sql`, variáveis de ambiente e logs do container `postgres`.
+- Se a API não conecta ao MySQL, verifique `db/init.sql`, variáveis de ambiente e logs do container `db`.
 
 ## Testes e verificação
 
 - `dig` para verificar RR DNS.
 - Abrir `http://www.meutrabalho.com.br` e atualizar várias vezes para ver revezamento entre `web1|web2|web3`.
 - Usar `curl http://localhost:<api_port>/api/ping` para checar o backend.
+
+## Testes Unitários
+
+O projeto possui uma suíte completa de testes unitários. Para mais informações, consulte [TESTS.md](./TESTS.md).
+
+### Executar Testes
+
+```bash
+# Executar todos os testes do projeto
+./run-all-tests.sh
+
+# Ou individualmente:
+cd backend && npm test
+cd web1 && npm test
+cd web2 && npm test
+cd web3 && npm test
+
+# Com cobertura de código
+npm run test:coverage
+```
+
+### Estrutura de Testes
+- **Backend**: Testes de API, sessão e banco de dados
+- **Web Servers**: Testes de rotas, autenticação e healthcheck
+- **Framework**: Jest + Supertest
+- **Cobertura**: > 80% em todos os módulos
+
 

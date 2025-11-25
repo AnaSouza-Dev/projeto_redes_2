@@ -50,7 +50,9 @@ export const sessionMiddleware = session({
   saveUninitialized: false,
   cookie: Object.assign({
     secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 10
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    maxAge: 1000 * 60 * 60 * 24 // 24 horas para facilitar testes
   },
   // allow setting a cookie domain to enable SSO across subdomains (optional)
   COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {})

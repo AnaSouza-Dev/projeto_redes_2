@@ -1,0 +1,312 @@
+// Exemplo de teste para uma nova funcionalidade
+// Arquivo: backend/src/__tests__/example.test.ts
+
+import request from 'supertest';
+import express from 'express';
+
+/**
+ * EXEMPLO 1: Teste Simples de Rota
+ */
+describe('Example - Simple Route Test', () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    
+    // Rota que queremos testar
+    app.get('/hello', (req, res) => {
+      res.json({ message: 'Hello, World!' });
+    });
+  });
+
+  it('should return hello message', async () => {
+    const response = await request(app).get('/hello');
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: 'Hello, World!' });
+  });
+});
+
+/**
+ * EXEMPLO 2: Teste com Parâmetros
+ */
+describe('Example - Route with Parameters', () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    
+    app.get('/user/:id', (req, res) => {
+      const userId = req.params.id;
+      res.json({ userId, name: 'Test User' });
+    });
+  });
+
+  it('should return user by id', async () => {
+    const response = await request(app).get('/user/123');
+    
+    expect(response.status).toBe(200);
+    expect(response.body.userId).toBe('123');
+    expect(response.body.name).toBe('Test User');
+  });
+});
+
+/**
+ * EXEMPLO 3: Teste de POST com Body
+ */
+describe('Example - POST Request', () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    
+    app.post('/data', (req, res) => {
+      const { name, age } = req.body;
+      
+      if (!name || !age) {
+        return res.status(400).json({ error: 'Missing fields' });
+      }
+      
+      res.status(201).json({ id: 1, name, age });
+    });
+  });
+
+  it('should create data successfully', async () => {
+    const newData = { name: 'John', age: 30 };
+    const response = await request(app).post('/data').send(newData);
+    
+    expect(response.status).toBe(201);
+    expect(response.body.id).toBe(1);
+    expect(response.body.name).toBe('John');
+  });
+
+  it('should return error for missing fields', async () => {
+    const response = await request(app).post('/data').send({ name: 'John' });
+    
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: 'Missing fields' });
+  });
+});
+
+/**
+ * EXEMPLO 4: Teste com Mock de Banco de Dados
+ */
+jest.mock('../db', () => ({
+  pool: {
+    query: jest.fn(),
+  },
+}));
+
+import { pool } from '../db';
+
+describe('Example - Database Mock', () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    
+    app.get('/items', async (req, res) => {
+      try {
+        const [rows] = await pool.query('SELECT * FROM items');
+        res.json(rows);
+      } catch (err) {
+        res.status(500).json({ error: 'Database error' });
+      }
+    });
+
+    jest.clearAllMocks();
+  });
+
+  it('should return items from database', async () => {
+    const mockItems = [
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+    ];
+
+    (pool.query as jest.Mock).mockResolvedValueOnce([mockItems]);
+
+    const response = await request(app).get('/items');
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(mockItems);
+    expect(pool.query).toHaveBeenCalledWith('SELECT * FROM items');
+  });
+
+  it('should handle database errors', async () => {
+    (pool.query as jest.Mock).mockRejectedValueOnce(new Error('DB Error'));
+
+    const response = await request(app).get('/items');
+    
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: 'Database error' });
+  });
+});
+
+/**
+ * EXEMPLO 5: Teste com Autenticação
+ */
+describe('Example - Authentication', () => {
+  let app: express.Application;
+
+  beforeEach(() => {
+    app = express();
+    app.use(express.json());
+    
+    // Middleware de autenticação mockado
+    app.use((req, res, next) => {
+      req.session = {
+        user: null,
+        save: (cb: any) => cb && cb(),
+        destroy: (cb: any) => cb && cb(),
+      } as any;
+      next();
+    });
+    
+    app.get('/protected', (req, res) => {
+      const user = req.session && (req.session as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      res.json({ message: 'Protected data' });
+    });
+  });
+
+  it('should return 401 when not authenticated', async () => {
+    const response = await request(app).get('/protected');
+    
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: 'Unauthorized' });
+  });
+
+  it('should return protected data when authenticated', async () => {
+    // Criar app com sessão autenticada
+    const authApp = express();
+    authApp.use(express.json());
+    authApp.use((req, res, next) => {
+      req.session = {
+        user: { id: 1, name: 'Test User' },
+        save: (cb: any) => cb && cb(),
+        destroy: (cb: any) => cb && cb(),
+      } as any;
+      next();
+    });
+    authApp.get('/protected', (req, res) => {
+      const user = req.session && (req.session as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      res.json({ message: 'Protected data' });
+    });
+
+    const response = await request(authApp).get('/protected');
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: 'Protected data' });
+  });
+});
+
+/**
+ * EXEMPLO 6: Teste Assíncrono
+ */
+describe('Example - Async Operations', () => {
+  it('should handle async operations', async () => {
+    const asyncFunction = async () => {
+      return new Promise((resolve) => {
+        setTimeout(() => resolve('Done'), 100);
+      });
+    };
+
+    const result = await asyncFunction();
+    expect(result).toBe('Done');
+  });
+
+  it('should handle promise rejections', async () => {
+    const asyncFunction = async () => {
+      return Promise.reject(new Error('Failed'));
+    };
+
+    await expect(asyncFunction()).rejects.toThrow('Failed');
+  });
+});
+
+/**
+ * EXEMPLO 7: Teste com Múltiplas Asserções
+ */
+describe('Example - Multiple Assertions', () => {
+  it('should validate complex objects', () => {
+    const user = {
+      id: 1,
+      name: 'John Doe',
+      email: 'john@example.com',
+      age: 30,
+      active: true,
+    };
+
+    expect(user).toBeDefined();
+    expect(user.id).toBe(1);
+    expect(user.name).toBe('John Doe');
+    expect(user.email).toContain('@');
+    expect(user.age).toBeGreaterThan(18);
+    expect(user.active).toBeTruthy();
+    
+    // Testar estrutura do objeto
+    expect(user).toHaveProperty('email');
+    expect(user).toMatchObject({
+      name: 'John Doe',
+      active: true,
+    });
+  });
+});
+
+/**
+ * EXEMPLO 8: Teste com beforeAll e afterAll
+ */
+describe('Example - Setup and Teardown', () => {
+  let connection: any;
+
+  beforeAll(() => {
+    // Executado uma vez antes de todos os testes
+    connection = { status: 'connected' };
+    console.log('Setup: Connection established');
+  });
+
+  afterAll(() => {
+    // Executado uma vez depois de todos os testes
+    connection = null;
+    console.log('Teardown: Connection closed');
+  });
+
+  beforeEach(() => {
+    // Executado antes de cada teste
+    console.log('Before each test');
+  });
+
+  afterEach(() => {
+    // Executado depois de cada teste
+    console.log('After each test');
+  });
+
+  it('should have active connection', () => {
+    expect(connection.status).toBe('connected');
+  });
+
+  it('should maintain connection between tests', () => {
+    expect(connection).toBeDefined();
+  });
+});
+
+/**
+ * DICAS IMPORTANTES:
+ * 
+ * 1. Nomeação: Use nomes descritivos que expliquem o comportamento esperado
+ * 2. Isolamento: Cada teste deve ser independente
+ * 3. AAA Pattern: Arrange (preparar), Act (executar), Assert (verificar)
+ * 4. Mock: Use mocks para dependências externas (DB, APIs, etc)
+ * 5. Coverage: Teste casos de sucesso E falha
+ * 6. Async: Use async/await para operações assíncronas
+ * 7. Cleanup: Use beforeEach/afterEach para limpar estado entre testes
+ */

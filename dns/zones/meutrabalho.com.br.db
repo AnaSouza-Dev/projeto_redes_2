@@ -1,14 +1,14 @@
-$TTL 10
+$TTL 0
 @   IN  SOA ns1.meutrabalho.com.br. admin.meutrabalho.com.br. (
-        2025112302 ; serial
+        2025112303 ; serial
         10         ; refresh
         5          ; retry
         7          ; expire
-        10 )       ; minimum
+        0 )        ; minimum
 
 @       IN  NS      ns1.meutrabalho.com.br.
 ns1     IN  A       172.20.0.10
 
-www     IN  A       172.20.0.11
-www     IN  A       172.20.0.12
-www     IN  A       172.20.0.13
+www     0   IN  A       172.20.0.11
+www     0   IN  A       172.20.0.12
+www     0   IN  A       172.20.0.13
