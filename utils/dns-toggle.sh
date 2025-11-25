@@ -70,7 +70,9 @@ apply_docker_dns() {
     fi
 
     echo "[DEBUG] Usando iptables em: $IPT_CMD (sudo: ${SUDO_CMD:-no})"
-
+    #aguardando mais tempo:
+    sleep 10
+    
     # Executa e captura saída para diagnóstico caso falhe
     if ! $SUDO_CMD "$IPT_CMD" -F FORWARD 2>/tmp/dns_toggle_iptables_err || true; then
         echo "[WARN] Falha ao limpar FORWARD: $(cat /tmp/dns_toggle_iptables_err 2>/dev/null)"
@@ -85,7 +87,7 @@ apply_docker_dns() {
     fi
 
     # Aguarda pequenas mudanças tomarem efeito
-    sleep 1
+    sleep 10
 
     # Teste simples de resolução após aplicar resolvectl + iptables
     if test_dns_reachable; then
@@ -139,5 +141,5 @@ else
 fi
 
 echo
-echo "[INFO] Conteúdo atual de /etc/resolv.conf:"
-cat /etc/resolv.conf
+#echo "[INFO] Conteúdo atual de /etc/resolv.conf:"
+#cat /etc/resolv.conf
