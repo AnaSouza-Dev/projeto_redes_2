@@ -21,22 +21,37 @@ if (typeof ConnectRedis === "function") {
   RedisStoreCtor = ConnectRedis;
 }
 
+const REDIS_HOST = process.env.REDIS_HOST || "redis";
+const REDIS_PORT = Number(process.env.REDIS_PORT || 6379);
+const COOKIE_DOMAIN = (process as any).env && (process as any).env.COOKIE_DOMAIN;
+
 export const redisClient = createClient({
   socket: {
-    host: "redis",
-    port: 6379
+    host: REDIS_HOST,
+    port: REDIS_PORT,
+    // exponential backoff: min(1s * 2^retries, 30s)
+    reconnectStrategy: (retries: number) => Math.min(1000 * 2 ** retries, 30000)
   }
 });
 
-redisClient.connect().catch(console.error);
+redisClient.on("error", (err) => console.error("Redis Client Error", err));
+redisClient.on("connect", () => console.log("Redis client connecting..."));
+redisClient.on("ready", () => console.log("Redis client ready"));
+
+// attempt to connect but do not crash the process if it fails — reconnectStrategy will retry
+redisClient.connect().catch((err) => {
+  console.error("Initial Redis connect failed (will retry):", err);
+});
 
 export const sessionMiddleware = session({
   store: new RedisStoreCtor({ client: redisClient as any }),
-  secret: "segredo-super-importante",
+  secret: process.env.SESSION_SECRET || "dev-secret",
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: false,
+  cookie: Object.assign({
+    secure: process.env.NODE_ENV === "production",
     maxAge: 1000 * 60 * 10
-  }
+  },
+  // allow setting a cookie domain to enable SSO across subdomains (optional)
+  COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {})
 });
